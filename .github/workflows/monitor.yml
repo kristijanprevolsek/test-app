@@ -1,0 +1,50 @@
+name: Pampers monitor
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # svaka 3 sata (UTC)
+  workflow_dispatch:
+    inputs:
+      test_telegram:
+        description: "Samo pošalji probnu poruku na Telegram"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # da može spremiti state.json natrag u repo
+
+concurrency:
+  group: pampers-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Probna poruka
+        if: ${{ inputs.test_telegram }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py --test-telegram
+
+      - name: Provjeri cijene
+        if: ${{ !inputs.test_telegram }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: Spremi zadnje cijene
+        if: ${{ always() && !inputs.test_telegram }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || (git commit -m "Ažuriraj zadnje cijene" && git push)
