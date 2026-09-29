@@ -1,0 +1,23 @@
+# Globalni prag: obavijest stiže kad je cijena ispod ove vrijednosti (EUR).
+threshold: 20.0
+
+# Kamo slati obavijesti. ntfy.sh je besplatan i ne traži registraciju:
+# instaliraj aplikaciju "ntfy" na mobitel i pretplati se na isti topic.
+# Topic neka bude teško pogodiv (svatko tko zna ime može čitati obavijesti).
+# Može se pregaziti varijablom okruženja NTFY_TOPIC.
+notify:
+  ntfy_topic: "promijeni-me-cijene-12345"
+  ntfy_server: "https://ntfy.sh"
+
+# Proizvodi koje pratiš. Za većinu webshopova dovoljan je samo URL –
+# cijena se automatski čita iz schema.org / meta podataka stranice.
+# Ako shop to nema, dodaj "selector" (CSS selektor elementa s cijenom).
+products:
+  - name: "Primjer proizvoda (Links)"
+    url: "https://www.links.hr/hr/primjer-proizvoda"
+  - name: "Primjer proizvoda (Instar)"
+    url: "https://www.instar-informatika.hr/primjer-proizvoda"
+  - name: "Primjer s vlastitim pragom i selektorom"
+    url: "https://www.example-shop.hr/proizvod/123"
+    selector: ".product-price .amount"
+    threshold: 15.0
