@@ -1,5 +1,5 @@
 # Globalni prag: obavijest stiže kad je cijena ispod ove vrijednosti (EUR).
-threshold: 20.0
+threshold: 28.0
 
 # Kamo slati obavijesti. ntfy.sh je besplatan i ne traži registraciju:
 # instaliraj aplikaciju "ntfy" na mobitel i pretplati se na isti topic.

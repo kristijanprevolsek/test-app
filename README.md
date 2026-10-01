@@ -1,7 +1,7 @@
 # Praćenje cijena na webshopovima
 
 Jednostavna skripta koja provjerava cijene proizvoda na više webshopova i šalje
-push obavijest na mobitel kad cijena padne **ispod 20 €** (prag se može mijenjati).
+push obavijest na mobitel kad cijena padne **ispod zadanog praga** (trenutno 28 €, mijenja se u `config.yaml`).
 
 ## Kako radi
 
