@@ -3,10 +3,10 @@ threshold: 28.0
 
 # Kamo slati obavijesti. ntfy.sh je besplatan i ne traži registraciju:
 # instaliraj aplikaciju "ntfy" na mobitel i pretplati se na isti topic.
-# Topic neka bude teško pogodiv (svatko tko zna ime može čitati obavijesti).
-# Može se pregaziti varijablom okruženja NTFY_TOPIC.
+# Topic se postavlja kao GitHub secret NTFY_TOPIC (repo je javan, pa ga
+# ne upisuj ovdje). Za lokalno pokretanje: NTFY_TOPIC=... python price_tracker.py
 notify:
-  ntfy_topic: "promijeni-me-cijene-12345"
+  ntfy_topic: ""
   ntfy_server: "https://ntfy.sh"
 
 # Proizvodi koje pratiš. Za većinu webshopova dovoljan je samo URL –
