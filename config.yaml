@@ -1,6 +1,12 @@
 # Globalni prag: obavijest stiže kad je cijena ispod ove vrijednosti (EUR).
 threshold: 28.0
 
+# Obavijest i kad se na stranici proizvoda pojavi neki od ovih tekstova
+# (velika/mala slova i razmaci se zanemaruju: "2+1" pronalazi i "2 + 1 GRATIS").
+# Proizvod može imati vlastiti popis pod "promo"; prazan popis isključuje provjeru.
+promo:
+  - "2+1"
+
 # Kamo slati obavijesti. ntfy.sh je besplatan i ne traži registraciju:
 # instaliraj aplikaciju "ntfy" na mobitel i pretplati se na isti topic.
 # Topic se postavlja kao GitHub secret NTFY_TOPIC (repo je javan, pa ga

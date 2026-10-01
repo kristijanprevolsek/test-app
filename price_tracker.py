@@ -101,14 +101,30 @@ def extract_price(html: str, selector: str | None = None) -> float | None:
     return None
 
 
-def fetch_price(product: dict) -> float | None:
+def find_promo(html: str, keywords: list[str]) -> str | None:
+    """Vraća isječak vidljivog teksta oko prve pronađene ključne riječi (npr. '2+1')."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+    text = " ".join(soup.get_text(" ").split())
+    for keyword in keywords:
+        # '2+1 gratis' pronalazi i '2 + 1 GRATIS'.
+        pattern = r"\s*".join(re.escape(ch) for ch in keyword if not ch.isspace())
+        match = re.search(rf"(?<!\d){pattern}(?!\d)", text, re.IGNORECASE)
+        if match:
+            start, end = max(match.start() - 40, 0), match.end() + 40
+            return text[start:end].strip()
+    return None
+
+
+def fetch_html(url: str) -> str:
     resp = requests.get(
-        product["url"],
+        url,
         headers={"User-Agent": USER_AGENT, "Accept-Language": "hr,en;q=0.8"},
         timeout=20,
     )
     resp.raise_for_status()
-    return extract_price(resp.text, product.get("selector"))
+    return resp.text
 
 
 def send_notification(notify_cfg: dict, title: str, message: str, url: str) -> None:
@@ -139,6 +155,7 @@ def load_state(path: Path) -> dict:
 def run(config_path: Path, state_path: Path) -> int:
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     default_threshold = float(config.get("threshold", 20.0))
+    default_promo = config.get("promo") or []
     notify_cfg = config.get("notify") or {}
     state = load_state(state_path)
     errors = 0
@@ -146,30 +163,41 @@ def run(config_path: Path, state_path: Path) -> int:
     for product in config.get("products", []):
         name, url = product.get("name", product["url"]), product["url"]
         threshold = float(product.get("threshold", default_threshold))
+        promo_keywords = product.get("promo", default_promo)
+        prev = state.get(url, {})
         try:
-            price = fetch_price(product)
+            html = fetch_html(url)
         except requests.RequestException as exc:
             print(f"GREŠKA  {name}: {exc}")
             errors += 1
             continue
+
+        price = extract_price(html, product.get("selector"))
         if price is None:
             print(f"GREŠKA  {name}: cijena nije pronađena (probaj dodati 'selector')")
             errors += 1
-            continue
+            below = prev.get("below", False)
+        else:
+            below = price < threshold
+            print(f"{'ISPOD ' if below else 'OK    '} {name}: {price:.2f} € (prag {threshold:.2f} €)")
+            # Obavijest samo kad cijena prvi put padne ispod praga, ne pri svakom pokretanju.
+            if below and not prev.get("below", False):
+                send_notification(
+                    notify_cfg,
+                    f"Pad cijene: {name}",
+                    f"Nova cijena {price:.2f} € (ispod {threshold:.2f} €)",
+                    url,
+                )
 
-        below = price < threshold
-        was_below = state.get(url, {}).get("below", False)
-        print(f"{'ISPOD ' if below else 'OK    '} {name}: {price:.2f} € (prag {threshold:.2f} €)")
+        promo = find_promo(html, promo_keywords) if promo_keywords else None
+        if promo_keywords:
+            print(f"{'AKCIJA ' if promo else 'BEZ AKCIJE'} {name}" + (f': "…{promo}…"' if promo else ""))
+        # Kao i za cijenu: obavijest kad se akcija pojavi, ne pri svakom pokretanju.
+        if promo and not prev.get("promo", False):
+            price_text = f" Cijena {price:.2f} €." if price is not None else ""
+            send_notification(notify_cfg, f"Akcija: {name}", f"Na stranici: \"{promo}\".{price_text}", url)
 
-        # Obavijest samo kad cijena prvi put padne ispod praga, ne pri svakom pokretanju.
-        if below and not was_below:
-            send_notification(
-                notify_cfg,
-                f"Pad cijene: {name}",
-                f"Nova cijena {price:.2f} € (ispod {threshold:.2f} €)",
-                url,
-            )
-        state[url] = {"price": price, "below": below}
+        state[url] = {"price": price if price is not None else prev.get("price"), "below": below, "promo": bool(promo)}
 
     state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return 1 if errors and errors == len(config.get("products", [])) else 0
