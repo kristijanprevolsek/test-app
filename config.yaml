@@ -13,11 +13,11 @@ notify:
 # cijena se automatski čita iz schema.org / meta podataka stranice.
 # Ako shop to nema, dodaj "selector" (CSS selektor elementa s cijenom).
 products:
-  - name: "Primjer proizvoda (Links)"
-    url: "https://www.links.hr/hr/primjer-proizvoda"
-  - name: "Primjer proizvoda (Instar)"
-    url: "https://www.instar-informatika.hr/primjer-proizvoda"
-  - name: "Primjer s vlastitim pragom i selektorom"
-    url: "https://www.example-shop.hr/proizvod/123"
-    selector: ".product-price .amount"
-    threshold: 15.0
+  - name: "Pampers Premium Care Jumbo Pack S6 (50 kom)"
+    url: "https://bazzar.hr/p/RZK49VX-pampers-premium-care-jumbo-pack-s6-50ct"
+
+  # Primjer s vlastitim pragom i CSS selektorom (ako automatsko čitanje ne uspije):
+  # - name: "Neki proizvod"
+  #   url: "https://www.nekishop.hr/proizvod/123"
+  #   selector: ".product-price .amount"
+  #   threshold: 15.0
