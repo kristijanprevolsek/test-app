@@ -26,7 +26,7 @@ push obavijest na mobitel kad cijena padne **ispod zadanog praga** (trenutno 28 
 
 ## Automatsko pokretanje (GitHub Actions)
 
-Workflow `.github/workflows/price-check.yml` pokreće provjeru svakih sat vremena
+Workflow `.github/workflows/price-check.yml` pokreće provjeru jednom dnevno (ujutro)
 i sprema `state.json` natrag u repo. Može se pokrenuti i ručno iz kartice
 **Actions → Provjera cijena → Run workflow**.
 
