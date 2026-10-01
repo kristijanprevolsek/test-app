@@ -48,16 +48,51 @@ def test_extract_with_selector():
     assert pt.extract_price(html, ".missing") is None
 
 
-def test_run_notifies_only_once(tmp_path):
+def page(price, promo=""):
+    return f'<meta property="product:price:amount" content="{price}"><p>{promo}</p>'
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Akcija 2+1 gratis", "AKCIJA 2 + 1 GRATIS", "2+1"],
+)
+def test_find_promo_matches(text):
+    assert pt.find_promo(page(10, text), ["2+1"]) is not None
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        page(10, "Pakiranje 12+1 kom"),
+        page(10, "Pakiranje 2+10 kom"),
+        page(10) + '<script>var promo = "2+1";</script>',
+        page(10, "Bez akcije"),
+    ],
+)
+def test_find_promo_ignores(html):
+    assert pt.find_promo(html, ["2+1"]) is None
+
+
+def test_find_promo_returns_context():
+    snippet = pt.find_promo(page(10, "Samo ovaj tjedan: akcija 2+1 gratis na pelene"), ["2+1 gratis"])
+    assert "akcija 2+1 gratis na pelene" in snippet
+
+
+def write_config(tmp_path, extra=""):
     cfg = tmp_path / "config.yaml"
     cfg.write_text(
-        "threshold: 20\nnotify: {}\nproducts:\n"
+        "threshold: 20\nnotify: {}\n" + extra + "products:\n"
         "  - {name: A, url: 'https://a'}\n  - {name: B, url: 'https://b'}\n"
     )
-    state = tmp_path / "state.json"
-    prices = {"https://a": 18.0, "https://b": 30.0}
+    return cfg
 
-    with mock.patch.object(pt, "fetch_price", lambda p: prices[p["url"]]), \
+
+def test_run_notifies_only_once(tmp_path):
+    cfg = write_config(tmp_path)
+    state = tmp_path / "state.json"
+    pages = {"https://a": page(18), "https://b": page(30)}
+
+    with mock.patch.object(pt, "fetch_html", lambda url: pages[url]), \
          mock.patch.object(pt, "send_notification") as notify:
         assert pt.run(cfg, state) == 0
         assert notify.call_count == 1
@@ -66,10 +101,45 @@ def test_run_notifies_only_once(tmp_path):
         pt.run(cfg, state)  # cijena i dalje ispod praga -> bez nove obavijesti
         assert notify.call_count == 1
 
-        prices["https://a"] = 25.0
+        pages["https://a"] = page(25)
         pt.run(cfg, state)  # vratila se iznad
-        prices["https://a"] = 19.0
+        pages["https://a"] = page(19)
         pt.run(cfg, state)  # ponovno pala -> nova obavijest
         assert notify.call_count == 2
 
-    assert json.loads(state.read_text())["https://a"] == {"price": 19.0, "below": True}
+    assert json.loads(state.read_text())["https://a"] == {"price": 19.0, "below": True, "promo": False}
+
+
+def test_run_notifies_on_promo_once(tmp_path):
+    cfg = write_config(tmp_path, 'promo: ["2+1"]\n')
+    state = tmp_path / "state.json"
+    pages = {"https://a": page(25), "https://b": page(30)}
+
+    with mock.patch.object(pt, "fetch_html", lambda url: pages[url]), \
+         mock.patch.object(pt, "send_notification") as notify:
+        pt.run(cfg, state)
+        assert notify.call_count == 0
+
+        pages["https://b"] = page(30, "Akcija 2+1 gratis")
+        pt.run(cfg, state)
+        assert notify.call_count == 1
+        title, message = notify.call_args.args[1:3]
+        assert title == "Akcija: B"
+        assert "2+1 gratis" in message and "30.00 €" in message
+
+        pt.run(cfg, state)  # akcija i dalje traje -> bez nove obavijesti
+        assert notify.call_count == 1
+
+    assert json.loads(state.read_text())["https://b"]["promo"] is True
+
+
+def test_run_checks_promo_when_price_missing(tmp_path):
+    cfg = write_config(tmp_path, 'promo: ["2+1"]\n')
+    state = tmp_path / "state.json"
+    pages = {"https://a": "<p>Akcija 2+1</p>", "https://b": page(30)}
+
+    with mock.patch.object(pt, "fetch_html", lambda url: pages[url]), \
+         mock.patch.object(pt, "send_notification") as notify:
+        pt.run(cfg, state)
+    assert notify.call_count == 1
+    assert notify.call_args.args[1] == "Akcija: A"

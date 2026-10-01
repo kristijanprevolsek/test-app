@@ -12,6 +12,9 @@ push obavijest na mobitel kad cijena padne **ispod zadanog praga** (trenutno 28 
 3. Kad cijena padne ispod praga, šalje obavijest preko [ntfy](https://ntfy.sh).
    Obavijest stiže samo **jednom** po padu – ponovno tek kad cijena poraste pa
    opet padne (stanje se čuva u `state.json`).
+4. Provjerava i je li na stranici akcija (npr. **2+1 gratis**) – traži tekstove
+   iz popisa `promo` u `config.yaml` i šalje obavijest kad se akcija pojavi.
+   U logu se ispisuje pronađeni tekst, pa se lako provjeri je li pogodak stvaran.
 
 ## Postavljanje obavijesti
 
@@ -23,7 +26,7 @@ push obavijest na mobitel kad cijena padne **ispod zadanog praga** (trenutno 28 
 
 ## Automatsko pokretanje (GitHub Actions)
 
-Workflow `.github/workflows/price-check.yml` pokreće provjeru svakih sat vremena
+Workflow `.github/workflows/price-check.yml` pokreće provjeru jednom dnevno (ujutro)
 i sprema `state.json` natrag u repo. Može se pokrenuti i ručno iz kartice
 **Actions → Provjera cijena → Run workflow**.
 

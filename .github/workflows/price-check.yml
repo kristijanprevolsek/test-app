@@ -2,7 +2,7 @@ name: Provjera cijena
 
 on:
   schedule:
-    - cron: "17 * * * *"   # svakih sat vremena
+    - cron: "13 6 * * *"    # jednom dnevno u 6:13 UTC (8:13 ljeti / 7:13 zimi po našem vremenu)
   workflow_dispatch:        # ručno pokretanje iz kartice Actions
 
 permissions:
