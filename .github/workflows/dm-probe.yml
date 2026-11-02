@@ -1,0 +1,22 @@
+name: dm proba (privremeno)
+on:
+  push:
+    branches: [claude/webshop-price-tracker-j8vys8]
+    paths: [.github/workflows/dm-probe.yml]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+          for u in \
+            "https://products.dm.de/product/HR/products/detail/dan/3068388" \
+            "https://products.dm.de/product/products/detail/HR/dan/3068388" \
+            "https://product-search.services.dmtech.com/hr/search?query=3068388" \
+            "https://product-search.services.dmtech.com/hr/search?query=pampers%20premium%20care%20jumbo%206" \
+            "https://www.dm.hr/p/d/3068388/pampers-premium-care-jumbo-pack-pelene-vel-6-15-18-kg" ; do
+            echo "=== $u"
+            curl -sS -L -m 20 -A "$UA" -H "Accept: application/json, text/html" -o out.txt -w "HTTP %{http_code} %{content_type} %{size_download}B\n" "$u" || true
+            head -c 1500 out.txt; echo
+            grep -oE '"(price|value|formattedValue|currentPrice|gtin|dan|title|name)"[^,]{0,60}' out.txt | head -20 || true
+          done
