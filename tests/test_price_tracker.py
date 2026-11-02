@@ -48,6 +48,43 @@ def test_extract_with_selector():
     assert pt.extract_price(html, ".missing") is None
 
 
+def test_dm_api_url():
+    url = "https://www.dm.hr/p/d/3068388/pampers-premium-care-jumbo-pack-pelene-vel-6-15-18-kg"
+    assert pt.dm_api_url(url) == "https://products.dm.de/product/products/detail/HR/dan/3068388"
+    assert pt.dm_api_url("https://bazzar.hr/p/RZK49VX-pampers") is None
+    assert pt.dm_api_url("https://www.dm.de/p/d/3068388/x") is None
+
+
+# Skraćeni stvarni odgovor dm API-ja.
+DM_JSON = json.dumps({
+    "dan": 3068388,
+    "metadata": {"currency": "EUR", "price": 18.5},
+    "price": {"price": {"current": {"value": "18,50 €"}}, "infos": ["Cijena na 02.05.2025.: 25,90 €"]},
+})
+
+
+def test_extract_dm_price():
+    assert pt.extract_dm_price(DM_JSON) == 18.5
+    assert pt.extract_dm_price(json.dumps({"price": {"price": {"current": {"value": "21,99 €"}}}})) == 21.99
+    assert pt.extract_dm_price("<html>nije JSON</html>") is None
+
+
+def test_run_uses_dm_api(tmp_path):
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("threshold: 20\nnotify: {}\nproducts:\n  - {name: D, url: 'https://www.dm.hr/p/d/3068388/pelene'}\n")
+    fetched = []
+
+    def fake_fetch(url):
+        fetched.append(url)
+        return DM_JSON
+
+    with mock.patch.object(pt, "fetch_html", fake_fetch), \
+         mock.patch.object(pt, "send_notification") as notify:
+        assert pt.run(cfg, tmp_path / "state.json") == 0
+    assert fetched == ["https://products.dm.de/product/products/detail/HR/dan/3068388"]
+    assert "18.50 €" in notify.call_args.args[2]
+
+
 def page(price, promo=""):
     return f'<meta property="product:price:amount" content="{price}"><p>{promo}</p>'
 

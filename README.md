@@ -50,5 +50,9 @@ products:
     threshold: 15                # vlastiti prag za ovaj proizvod
 ```
 
+**dm.hr** je podržan posebno: stranica cijenu učitava JavaScriptom, pa skripta
+za `dm.hr/p/d/...` linkove cijenu čita iz dm-ovog API-ja. Dovoljno je upisati
+link proizvoda.
+
 Ako se za neki proizvod ispiše `cijena nije pronađena`, otvori stranicu u
 pregledniku, desni klik na cijenu → *Inspect* i prepiši CSS klasu u `selector`.
