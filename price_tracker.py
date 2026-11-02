@@ -117,6 +117,28 @@ def find_promo(html: str, keywords: list[str]) -> str | None:
     return None
 
 
+DM_PRODUCT_RE = re.compile(r"^https?://(?:www\.)?dm\.hr/p/d/(\d+)")
+
+
+def dm_api_url(url: str) -> str | None:
+    """dm.hr cijenu učitava JavaScriptom, pa se za njegove proizvode čita dm-ov JSON API."""
+    match = DM_PRODUCT_RE.match(url)
+    if not match:
+        return None
+    return f"https://products.dm.de/product/products/detail/HR/dan/{match.group(1)}"
+
+
+def extract_dm_price(text: str) -> float | None:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    price = (data.get("metadata") or {}).get("price")
+    if price is None:
+        price = (((data.get("price") or {}).get("price") or {}).get("current") or {}).get("value")
+    return parse_price(price)
+
+
 def fetch_html(url: str) -> str:
     resp = requests.get(
         url,
@@ -165,14 +187,15 @@ def run(config_path: Path, state_path: Path) -> int:
         threshold = float(product.get("threshold", default_threshold))
         promo_keywords = product.get("promo", default_promo)
         prev = state.get(url, {})
+        api_url = dm_api_url(url)
         try:
-            html = fetch_html(url)
+            html = fetch_html(api_url or url)
         except requests.RequestException as exc:
             print(f"GREŠKA  {name}: {exc}")
             errors += 1
             continue
 
-        price = extract_price(html, product.get("selector"))
+        price = extract_dm_price(html) if api_url else extract_price(html, product.get("selector"))
         if price is None:
             print(f"GREŠKA  {name}: cijena nije pronađena (probaj dodati 'selector')")
             errors += 1

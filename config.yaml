@@ -21,6 +21,9 @@ notify:
 products:
   - name: "Pampers Premium Care Jumbo Pack S6 (50 kom)"
     url: "https://bazzar.hr/p/RZK49VX-pampers-premium-care-jumbo-pack-s6-50ct"
+  # dm.hr je podržan posebno (cijena se čita iz dm-ovog API-ja) – dovoljan je link proizvoda.
+  - name: "Pampers Premium Care Jumbo Pack S6 (50 kom) – dm"
+    url: "https://www.dm.hr/p/d/3068388/pampers-premium-care-jumbo-pack-pelene-vel-6-15-18-kg"
 
   # Primjer s vlastitim pragom i CSS selektorom (ako automatsko čitanje ne uspije):
   # - name: "Neki proizvod"
